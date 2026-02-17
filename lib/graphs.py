@@ -8,7 +8,6 @@ import io
 import os
 import json
 
-
     #возврат типа диаграммы в виде строки
 def take_commands_and_return_type(json_input):
     list_commands = []
@@ -25,16 +24,14 @@ def generate_report(input_file, sheets_to_process, user_commands):
     """
     input_file: путь к исходному Excel
     sheets_to_process: список названий листов
-    user_commands: список команд (например, ['bar', 'line'])
+    user_commands: список команд
     """
     output_file = "Result.xlsx"
     wb_new = Workbook()
-    # Удаляем стандартный лист
     std_sheet = wb_new.active
     wb_new.remove(std_sheet)
 
     for sheet_name in sheets_to_process:
-        # Чтение данных
         try:
             df = pd.read_excel(input_file, sheet_name=sheet_name)
         except Exception as e:
@@ -111,7 +108,8 @@ def generate_report(input_file, sheets_to_process, user_commands):
 
         auto_chart = None
         cond_label = ""
-        
+
+        # мини алгортим для выбора не через ллм
         if row_count <= 20:
             auto_chart = BarChart()
             cond_label = "Small Data (Bar)"
@@ -131,7 +129,7 @@ def generate_report(input_file, sheets_to_process, user_commands):
             auto_chart.add_data(data_ref, titles_from_data=True)
             ws.add_chart(auto_chart, f"{chart_col_letter}{current_row}")
 
-            # PNG для автоматической диаграммы
+            # png для автоматической диаграммы
             img_path_auto = f"temp_{sheet_name}_auto.png"
             kind_map = {BarChart: 'bar', LineChart: 'line', AreaChart: 'area'}
             df.plot(x=df.columns[0], kind='line' if row_count > 20 else 'bar')
@@ -150,23 +148,11 @@ def generate_report(input_file, sheets_to_process, user_commands):
             
     print(f"Файл {output_file} успешно создан.")
 
-'''
-def create_test_excel():
-    with pd.ExcelWriter("test_data.xlsx") as writer:
-        df1 = pd.DataFrame({'Category': ['A', 'B', 'C'], 'Val': [10, 20, 15]})
-        df1.to_excel(writer, sheet_name='SmallSheet', index=False)
-        
-        df2 = pd.DataFrame({'Month': range(60), 'Users': [x**2 for x in range(60)]})
-        df2.to_excel(writer, sheet_name='BigSheet', index=False)
-'''
 
 if __name__ == "__main__":
-
-    #create_test_excel()
     
-    # Параметры: файл, листы, команды
     target_sheets = ['SmallSheet', 'BigSheet']
     list_of_jsons = ['{type:}', '{type:}', '{type:}', '{type:}', '{type:}']
     commands = take_commands_and_return_type(list_of_jsons)
     
-    generate_report("test_data.xlsx", target_sheets, commands)
+    generate_report("testTable.xlsx", target_sheets, commands)
