@@ -23,6 +23,7 @@ app.add_middleware(
 UPLOAD_FOLDER = "uploads"
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+
 # В памяти храним:
 # session_id -> {
 #     file_path: "...",
@@ -85,5 +86,7 @@ async def build_chart(data: dict):
 
     return FileResponse(image_path, media_type="image/png")
 
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 app.mount("/", StaticFiles(directory="site"), name="site")
+

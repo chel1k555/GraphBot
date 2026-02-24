@@ -4,4 +4,7 @@
 
 /uploads
 Result.xlsx
-/static
+
+/venv
+
+/install
