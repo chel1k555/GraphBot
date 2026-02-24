@@ -3,7 +3,7 @@
 /lib/__pycache__
 
 /uploads
-Result.xlsx
+*.xlsx
 
 /venv
 
