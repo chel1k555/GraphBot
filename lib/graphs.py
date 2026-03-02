@@ -21,7 +21,7 @@ def take_commands_and_return_type(json_input):
             list_commands.append("line_chart") # базовый если нету нужного
     return list_commands
 
-def generate_chart(file_path, chart_config):
+def generate_chart(file_path: str, chart_config: list):
     df = pd.read_excel(file_path)
 
     chart_type = chart_config["type"]
