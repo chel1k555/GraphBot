@@ -50,7 +50,11 @@ def generate_chart(file_path: str, chart_config: list):
         chart = LineChart()
         chart.style = 13
         chart.title = "Scatter Plot"
-    
+    elif chart_type == "bubble_chart":
+        chart = LineChart()
+        chart.style = 13
+        chart.title = "Bubble Chart"
+           
     # Добавление данных в график
     if chart:
         data = Reference(ws, min_col=2, min_row=1, max_col=len(df.columns), max_row=row_count+1)
