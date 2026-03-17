@@ -61,6 +61,7 @@ def systemPrompt() -> str:
                         "type": "Универсальное название визуализации, например line_chart",
                         "why": "почему подходит",
                         "columns_used": ["col1", "col2"]
+                        "colums_used_with_text": ["col1"]
                     }}
                     ]
 
