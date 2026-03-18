@@ -45,16 +45,13 @@ def systemPrompt() -> str:
     prompt = """Ты — эксперт по аналитике данных и визуализации. Тебе поступает описание датасета.
                     Задача:
                     1. Проанализируй структуру данных
-                    2. Предложи 5 наиболее подходящих типов визуализации
+                    2. Предложи от 1 до 3 наиболее подходящих типов визуализации
                     3. Используй универсальные названия визуализации:
                     - line_chart
                     - bar_chart
-                    - stacked_bar_chart
                     - pie_chart
                     - histogram
-                    - boxplot
                     - scatter_plot
-                    - heatmap
                     - area_chart
                     - bubble_chart
 
@@ -64,6 +61,7 @@ def systemPrompt() -> str:
                         "type": "Универсальное название визуализации, например line_chart",
                         "why": "почему подходит",
                         "columns_used": ["col1", "col2"]
+                        "colums_used_with_text": ["col1"]
                     }}
                     ]
 

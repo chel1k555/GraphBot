@@ -45,38 +45,3 @@ def detectColumnType(series: pd.Series) -> str:
         return "categorical"
     else:
         return "text"
-
-def detect_column_type(series: pd.Series) -> str:
-    # 1. Уже datetime
-    if pd.api.types.is_datetime64_any_dtype(series):
-        return "datetime"
-
-    # 2. Numeric
-    if pd.api.types.is_numeric_dtype(series):
-        return "numeric"
-
-    # 3. Boolean
-    if pd.api.types.is_bool_dtype(series):
-        return "boolean"
-
-    # 4. Пробуем определить дату только если тип object (строка)
-    if series.dtype == "object":
-        non_null = series.dropna()
-
-        if len(non_null) == 0:
-            return "text"
-
-        # пробуем парсинг
-        parsed = pd.to_datetime(non_null, errors="coerce", dayfirst=True)
-
-        success_rate = parsed.notna().mean()
-
-        # если >= 80% значений распарсились - считаем datetime
-        if success_rate > 0.8:
-            return "datetime"
-
-    # 5. Категориальные
-    if series.nunique() < 30:
-        return "categorical"
-
-    return "text"

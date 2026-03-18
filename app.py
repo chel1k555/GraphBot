@@ -33,7 +33,7 @@ SESSIONS = {}
 
 @app.get("/", response_class=HTMLResponse)
 async def root():
-    with open("site/index.html", "r", encoding="utf-8") as f:
+    with open("templates/index.html", "r", encoding="utf-8") as f:
         return f.read()
     
 
@@ -88,5 +88,5 @@ async def build_chart(data: dict):
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
-app.mount("/", StaticFiles(directory="site"), name="site")
+app.mount("/", StaticFiles(directory="templates"), name="templates")
 
