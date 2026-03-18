@@ -53,7 +53,6 @@ def systemPrompt() -> str:
                     - histogram
                     - scatter_plot
                     - area_chart
-                    - bubble_chart
 
                     Верни строго JSON в формате:
                     List[
