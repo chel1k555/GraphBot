@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 import shutil
 import os
@@ -56,14 +56,17 @@ async def analyze(file: UploadFile = File(...)):
     # Получаем рекомендации от LLM
     result = LLM.GetLLMResponse(userPrompt, systemPrompt, debugMessages=True)
 
+    # Фильтруем рекомендации, которые невозможно построить
+    valid = [r for r in result if graphs.validate_chart_config(file_path, r)]
+
     SESSIONS[session_id] = {
         "file_path": file_path,
-        "lst": result
+        "lst": valid
     }
 
     return {
         "session_id": session_id,
-        "recommendations": result
+        "recommendations": valid
     }
 
 @app.post("/build_chart")
@@ -80,11 +83,14 @@ async def build_chart(data: dict):
     file_path = session["file_path"]
     chart_config = session["lst"][chart_index]
 
-    image_path = graphs.generate_chart(
-        file_path,
-        chart_config,
-        colors=colors
-    )
+    try:
+        image_path = graphs.generate_chart(
+            file_path,
+            chart_config,
+            colors=colors
+        )
+    except (ValueError, KeyError, IndexError) as e:
+        return JSONResponse({"error": str(e)}, status_code=400)
 
     return FileResponse(image_path, media_type="image/png")
 

@@ -327,7 +327,7 @@
                 // Описание
                 const desc = document.createElement("div")
                 desc.className = "chart-option-desc"
-                desc.innerText = rec.why
+                desc.innerText = rec.why.length > 100 ? rec.why.slice(0, 100) + "…" : rec.why
 
                 card.appendChild(img)
                 card.appendChild(title)
@@ -357,6 +357,15 @@
                 },
                 body: JSON.stringify(payload)
             })
+
+            if (!response.ok) {
+                const err = await response.json()
+                const chartContainer = document.getElementById("chart-container")
+                chartContainer.innerHTML = '<p style="color:#c44e52;">Не удалось построить график: ' +
+                    (err.error || 'неизвестная ошибка') + '</p>'
+                return
+            }
+
             const blob = await response.blob()
             const url = URL.createObjectURL(blob)
 
