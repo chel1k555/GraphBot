@@ -307,6 +307,7 @@ def generate_chart(file_path: str, chart_config: dict, colors: list = None) -> s
         PALETTE = colors + PALETTE[len(colors):]
 
     df = pd.read_excel(file_path)
+    df.columns = [str(c) for c in df.columns] 
 
     raw_type  = chart_config.get("type", "")
     columns   = chart_config.get("columns_used") or []

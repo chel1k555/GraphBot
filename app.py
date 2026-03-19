@@ -53,8 +53,17 @@ async def analyze(file: UploadFile = File(...)):
     userPrompt = promptGenerator.userPrompt(profile, sample_rows)
     systemPrompt = promptGenerator.systemPrompt()
     
-    # Получаем рекомендации от LLM
-    result = LLM.GetLLMResponse(userPrompt, systemPrompt, debugMessages=True)
+    # Получаем рекомендации от LLM (с повтором при ошибке парсинга)
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            result = LLM.GetLLMResponse(userPrompt, systemPrompt, debugMessages=True)
+            break
+        except ValueError as e:
+            if attempt < max_retries - 1:
+                print(f"LLM attempt {attempt + 1} failed: {e}. Retrying...")
+            else:
+                raise
 
     # Фильтруем рекомендации, которые невозможно построить
     valid = [r for r in result if graphs.validate_chart_config(file_path, r)]
