@@ -68,6 +68,9 @@ async def analyze(file: UploadFile = File(...)):
     # Фильтруем рекомендации, которые невозможно построить
     valid = [r for r in result if graphs.validate_chart_config(file_path, r)]
 
+    # Фильтруем рекомендации, которые невозможно построить
+    valid = [r for r in result if graphs.validate_chart_config(file_path, r)]
+
     SESSIONS[session_id] = {
         "file_path": file_path,
         "lst": valid
