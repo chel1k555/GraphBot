@@ -85,14 +85,12 @@
             </div>
 
 
-            <button class="download-btn">Скачать график</button>
 
             <!-- КНОПКИ УПРАВЛЕНИЯ — ВНУТРИ result-card -->
             <div class="chart-actions">
-                <button>Другой тип</button>
-                <button>Настроить цвета</button>
-                <button>Исключить типы</button>
-                <button class="primary">Новый файл</button>
+                <button class="primary" onclick="downloadChart()">Скачать график</button>
+                <button class="primary" onclick="openColorModal()">Настроить цвета</button>
+                <button class="primary" onclick="newFile()">Новый файл</button>
             </div>
 
         </section>
@@ -210,10 +208,30 @@
 
     </div>
 
+    <!-- Модальное окно настройки цветов -->
+    <div class="modal-overlay" id="colorModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h3>Настроить цвета</h3>
+                <span class="modal-close" onclick="closeColorModal()">✕</span>
+            </div>
+            <div class="modal-body">
+                <p style="margin-bottom:14px; color:#666; font-size:14px;">Выберите цвета для графика:</p>
+                <div id="colorInputs" style="display:flex; flex-wrap:wrap; gap:12px; justify-content:center;"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeColorModal()">Отмена</button>
+                <button class="btn-primary" onclick="applyColors()">Применить</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Скрипты управления открытием и закрытием модального окна -->
     <script>
 
         let selectedFile = null
+        let currentChartIndex = null
+        let customColors = null
 
         function openModal() {
             document.getElementById("uploadModal").style.display = "flex"
@@ -321,34 +339,93 @@
         }
 
 
-        async function buildChart(index) {
+        async function buildChart(index, colors) {
+            currentChartIndex = index
+
+            const payload = {
+                session_id: window.sessionId,
+                chart_index: index
+            }
+            if (colors) {
+                payload.colors = colors
+            }
 
             const response = await fetch("/build_chart", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json"
                 },
-                body: JSON.stringify({
-                    session_id: window.sessionId,
-                    chart_index: index
-                })
+                body: JSON.stringify(payload)
             })
             const blob = await response.blob()
             const url = URL.createObjectURL(blob)
-            // const data = await response.json();
 
             const chartContainer = document.getElementById("chart-container");
-
-            // УДАЛЯЕМ старый график
             chartContainer.innerHTML = "";
 
-            // Создаем новый img
             const img = document.createElement("img");
-            img.src = url; // защита от кэша
+            img.src = url;
             img.style.maxWidth = "800px";
             img.style.borderRadius = "10px";
 
             chartContainer.appendChild(img);
+        }
+
+        function downloadChart() {
+            const img = document.querySelector("#chart-container img")
+            if (!img) return
+            const a = document.createElement("a")
+            a.href = img.src
+            a.download = "chart.png"
+            a.click()
+        }
+
+        function newFile() {
+            document.getElementById("resultCard").style.display = "none"
+            document.querySelector(".upload-card").style.display = ""
+            document.getElementById("chart-container").innerHTML = ""
+            document.getElementById("chart-buttons").innerHTML = ""
+            selectedFile = null
+            currentChartIndex = null
+            customColors = null
+            fileInput.value = ""
+        }
+
+        function openColorModal() {
+            const container = document.getElementById("colorInputs")
+            container.innerHTML = ""
+            const defaults = ["#4C72B0","#DD8452","#55A868","#C44E52","#8172B3","#937860"]
+            const current = customColors || defaults
+            for (let i = 0; i < 6; i++) {
+                const wrap = document.createElement("div")
+                wrap.style.textAlign = "center"
+                const label = document.createElement("div")
+                label.textContent = "Цвет " + (i + 1)
+                label.style.fontSize = "12px"
+                label.style.marginBottom = "4px"
+                label.style.color = "#555"
+                const input = document.createElement("input")
+                input.type = "color"
+                input.value = current[i]
+                input.className = "color-pick"
+                wrap.appendChild(label)
+                wrap.appendChild(input)
+                container.appendChild(wrap)
+            }
+            document.getElementById("colorModal").style.display = "flex"
+        }
+
+        function closeColorModal() {
+            document.getElementById("colorModal").style.display = "none"
+        }
+
+        function applyColors() {
+            const inputs = document.querySelectorAll("#colorInputs .color-pick")
+            customColors = Array.from(inputs).map(i => i.value)
+            closeColorModal()
+            if (currentChartIndex !== null) {
+                buildChart(currentChartIndex, customColors)
+            }
         }
 
 

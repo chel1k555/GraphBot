@@ -265,10 +265,14 @@ _BUILDERS = {
 
 
 
-def generate_chart(file_path: str, chart_config: dict) -> str:
+def generate_chart(file_path: str, chart_config: dict, colors: list = None) -> str:
 
     if not chart_config:
         raise ValueError("chart_config is empty")
+
+    if colors:
+        global PALETTE
+        PALETTE = colors + PALETTE[len(colors):]
 
     df = pd.read_excel(file_path)
 
@@ -300,5 +304,13 @@ def generate_chart(file_path: str, chart_config: dict) -> str:
 
     _apply_style()
     fig = _BUILDERS[chart_type](df_sub, num_cols, txt_cols)
-    return _save(fig, OUTPUT_PATH)
+    result = _save(fig, OUTPUT_PATH)
+
+    if colors:
+        PALETTE = [
+            "#4C72B0", "#DD8452", "#55A868", "#C44E52",
+            "#8172B3", "#937860", "#DA8BC3", "#8C8C8C",
+            "#CCB974", "#64B5CD",
+        ]
+    return result
 

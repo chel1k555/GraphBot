@@ -71,6 +71,7 @@ async def build_chart(data: dict):
 
     session_id = data["session_id"]
     chart_index = data["chart_index"]
+    colors = data.get("colors")
 
     session = SESSIONS.get(session_id)
     if not session:
@@ -81,7 +82,8 @@ async def build_chart(data: dict):
 
     image_path = graphs.generate_chart(
         file_path,
-        chart_config
+        chart_config,
+        colors=colors
     )
 
     return FileResponse(image_path, media_type="image/png")
