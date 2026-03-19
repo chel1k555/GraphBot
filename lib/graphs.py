@@ -265,6 +265,38 @@ _BUILDERS = {
 
 
 
+def validate_chart_config(file_path: str, chart_config: dict) -> bool:
+    """Check if a chart config can be plotted against the given file."""
+    try:
+        if not chart_config:
+            return False
+
+        df = pd.read_excel(file_path)
+
+        raw_type = chart_config.get("type", "")
+        columns = chart_config.get("columns_used") or []
+        text_hint = chart_config.get("columns_used_with_text") or []
+
+        chart_type = _normalise_type(raw_type)
+        if chart_type not in _BUILDERS:
+            return False
+
+        available = [c for c in columns if c in df.columns]
+        if not available:
+            return False
+
+        df_sub = df[available].copy()
+        num_cols, txt_cols = _classify(df_sub, available, text_hint)
+
+        min_num = _MIN_NUMERIC.get(chart_type, 1)
+        if len(num_cols) < min_num:
+            return False
+
+        return True
+    except Exception:
+        return False
+
+
 def generate_chart(file_path: str, chart_config: dict, colors: list = None) -> str:
 
     if not chart_config:
