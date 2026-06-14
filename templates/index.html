@@ -60,8 +60,8 @@
 
             <div class="loader"></div>
 
-            <h3>Анализируем данные...</h3>
-            <p>Подбираем оптимальный тип графика</p>
+            <h3 id="loaderText">Анализируем структуру ваших данных...</h3>
+            <p class="loader-sub">Это может занять до двух минут</p>
 
         </section>
 
@@ -233,6 +233,34 @@
         let currentChartIndex = null
         let customColors = null
 
+        const LOADING_PHRASES = [
+            "Анализируем структуру ваших данных...",
+            "Определяем типы данных и зависимости...",
+            "Подбираем оптимальные варианты визуализации...",
+            "Формируем графики и строим оси...",
+            "Готовим понятные описания для графиков...",
+            "Еще немного, завершаем обработку..."
+        ]
+        let loadingIntervalId = null
+
+        function startLoadingPhrases() {
+            const el = document.getElementById("loaderText")
+            let idx = 0
+            el.textContent = LOADING_PHRASES[0]
+            stopLoadingPhrases()
+            loadingIntervalId = setInterval(() => {
+                idx = (idx + 1) % LOADING_PHRASES.length
+                el.textContent = LOADING_PHRASES[idx]
+            }, 4000)
+        }
+
+        function stopLoadingPhrases() {
+            if (loadingIntervalId !== null) {
+                clearInterval(loadingIntervalId)
+                loadingIntervalId = null
+            }
+        }
+
         function openModal() {
             document.getElementById("uploadModal").style.display = "flex"
         }
@@ -270,24 +298,37 @@
 
             document.querySelector(".upload-card").style.display = "none"
             document.getElementById("loadingCard").style.display = "block"
+            startLoadingPhrases()
 
             const formData = new FormData()
             formData.append("file", file)
 
-            const response = await fetch("/analyze", {
-                method: "POST",
-                body: formData
-            })
+            try {
+                const response = await fetch("/analyze", {
+                    method: "POST",
+                    body: formData
+                })
 
-            const data = await response.json()
+                const data = await response.json()
 
-            window.sessionId = data.session_id
-            window.recommendations = data.recommendations
+                if (!response.ok) {
+                    throw new Error(data.error || "Ошибка обработки файла")
+                }
 
-            document.getElementById("loadingCard").style.display = "none"
-            document.getElementById("resultCard").style.display = "block"
+                window.sessionId = data.session_id
+                window.recommendations = data.recommendations
 
-            renderChartOptions()
+                document.getElementById("loadingCard").style.display = "none"
+                document.getElementById("resultCard").style.display = "block"
+
+                renderChartOptions()
+            } catch (e) {
+                document.getElementById("loadingCard").style.display = "none"
+                document.querySelector(".upload-card").style.display = ""
+                alert("Не удалось обработать файл: " + (e.message || "неизвестная ошибка"))
+            } finally {
+                stopLoadingPhrases()
+            }
         }
 
         function renderChartOptions() {
@@ -295,39 +336,41 @@
             const container = document.getElementById("chart-buttons")
             container.innerHTML = ""
 
+            const iconMap = {
+                "bar_chart":     "bar_chart.png",
+                "pie_chart":     "pie_chart.png",
+                "histogram":     "histogram.png",
+                "scatter_plot":  "scatter_plot.png",
+                "line_chart":    "line_chart.png",
+                "area_chart":    "area_chart.png"
+            }
+
+            const titleMap = {
+                "bar_chart":    "Столбчатая диаграмма",
+                "pie_chart":    "Круговая диаграмма",
+                "histogram":    "Гистограмма",
+                "scatter_plot": "Точечная диаграмма",
+                "line_chart":   "Линейный график",
+                "area_chart":   "Диаграмма с областями"
+            }
+
             window.recommendations.forEach((rec, index) => {
                 const card = document.createElement("button")
                 card.type = "button"
                 card.className = "chart-option-btn"
                 card.onclick = () => buildChart(index)
 
-                // Картинка (заготовка)
                 const img = document.createElement("img")
                 img.className = "chart-option-img"
-                const iconMap = {
-                    "bar_chart": "bar_chart.png",
-                    "pie_chart": "pie_chart.png",
-                    "histogram": "histogram.png",
-                    "scatter_plot": "scatter_plot.png",
-                    "boxplot": "boxplot.png",
-                    "area_chart": "area_chart.png",
-                    "bubble_chart": "bubble_chart.png",
-                    "heatmap": "heatmap.png",
-                    "line_chart": "line_chart.png",
-                    "stacked_bar_chart": "stacked_bar_chart.png"
-                }
+                img.src = "static/icons/" + (iconMap[rec.type] || "bar_chart.png")
 
-                img.src = "static/icons/" + iconMap[rec.type]
-                
-                // Название
                 const title = document.createElement("div")
                 title.className = "chart-option-title"
-                title.innerText = rec.type
+                title.innerText = titleMap[rec.type] || rec.type
 
-                // Описание
                 const desc = document.createElement("div")
                 desc.className = "chart-option-desc"
-                desc.innerText = rec.why.length > 100 ? rec.why.slice(0, 100) + "…" : rec.why
+                desc.innerText = rec.why
 
                 card.appendChild(img)
                 card.appendChild(title)

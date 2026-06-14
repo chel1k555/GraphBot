@@ -59,14 +59,14 @@ async def analyze(file: UploadFile = File(...)):
         try:
             result = LLM.GetLLMResponse(userPrompt, systemPrompt, debugMessages=True)
             break
+        except RuntimeError as e:
+            # фатальные ошибки (например, неверный API-ключ) — не ретраим
+            return JSONResponse({"error": str(e)}, status_code=502)
         except ValueError as e:
             if attempt < max_retries - 1:
                 print(f"LLM attempt {attempt + 1} failed: {e}. Retrying...")
             else:
-                raise
-
-    # Фильтруем рекомендации, которые невозможно построить
-    valid = [r for r in result if graphs.validate_chart_config(file_path, r)]
+                return JSONResponse({"error": f"LLM error: {e}"}, status_code=502)
 
     # Фильтруем рекомендации, которые невозможно построить
     valid = [r for r in result if graphs.validate_chart_config(file_path, r)]

@@ -104,34 +104,51 @@ def _normalise_type(raw):
 
 
 
-def _barchart(df, num_cols, txt_cols):
+def _barchart(df, num_cols, txt_cols, palette=None):
+    pal = palette or PALETTE
     categories = df[txt_cols[0]].astype(str) if txt_cols else df.index.astype(str)
+    max_label_len = max((len(c) for c in categories), default=0)
+    horizontal = max_label_len > 15 or len(categories) > 12
+
     x = np.arange(len(categories))
     bar_w = 0.8 / max(len(num_cols), 1)
 
-    fig, ax = plt.subplots(figsize=(10, 5))
-    for i, col in enumerate(num_cols):
-        ax.bar(x + i * bar_w, _to_num(df[col]), width=bar_w,
-               label=col, color=PALETTE[i % len(PALETTE)], edgecolor="white")
+    if horizontal:
+        fig_h = max(4, 0.45 * len(categories))
+        fig, ax = plt.subplots(figsize=(10, fig_h))
+        for i, col in enumerate(num_cols):
+            ax.barh(x + i * bar_w, _to_num(df[col]), height=bar_w,
+                    label=col, color=pal[i % len(pal)], edgecolor="white")
+        ax.set_yticks(x + bar_w * (len(num_cols) - 1) / 2)
+        ax.set_yticklabels(categories)
+        ax.invert_yaxis()
+        ax.set_ylabel(txt_cols[0] if txt_cols else "Index")
+        ax.set_xlabel("Value")
+    else:
+        fig, ax = plt.subplots(figsize=(10, 5))
+        for i, col in enumerate(num_cols):
+            ax.bar(x + i * bar_w, _to_num(df[col]), width=bar_w,
+                   label=col, color=pal[i % len(pal)], edgecolor="white")
+        ax.set_xticks(x + bar_w * (len(num_cols) - 1) / 2)
+        ax.set_xticklabels(categories, rotation=30, ha="right")
+        ax.set_xlabel(txt_cols[0] if txt_cols else "Index")
+        ax.set_ylabel("Value")
 
-    ax.set_xticks(x + bar_w * (len(num_cols) - 1) / 2)
-    ax.set_xticklabels(categories, rotation=30, ha="right")
-    ax.set_xlabel(txt_cols[0] if txt_cols else "Index")
-    ax.set_ylabel("Value")
     ax.set_title("Bar Chart")
     if len(num_cols) > 1:
         ax.legend()
     return fig
 
 
-def _linechart(df, num_cols, txt_cols):
+def _linechart(df, num_cols, txt_cols, palette=None):
+    pal = palette or PALETTE
     x_vals = df[txt_cols[0]].astype(str) if txt_cols else df.index.astype(str)
     x_idx = np.arange(len(x_vals))
 
     fig, ax = plt.subplots(figsize=(10, 5))
     for i, col in enumerate(num_cols):
         ax.plot(x_idx, _to_num(df[col]), marker="o", markersize=4,
-                label=col, color=PALETTE[i % len(PALETTE)], linewidth=2)
+                label=col, color=pal[i % len(pal)], linewidth=2)
 
     ax.set_xticks(x_idx)
     ax.set_xticklabels(x_vals, rotation=30, ha="right")
@@ -143,17 +160,28 @@ def _linechart(df, num_cols, txt_cols):
     return fig
 
 
-def _piechart(df, num_cols, txt_cols):
-    values = _to_num(df[num_cols[0]]).fillna(0)
-    labels = df[txt_cols[0]].astype(str) if txt_cols else df.index.astype(str)
+def _piechart(df, num_cols, txt_cols, palette=None):
+    pal = palette or PALETTE
+    values = _to_num(df[num_cols[0]]).fillna(0).reset_index(drop=True)
+    if txt_cols:
+        labels = df[txt_cols[0]].astype(str).reset_index(drop=True)
+    else:
+        labels = pd.Series(df.index.astype(str))
 
     mask = values > 0
-    values, labels = values[mask], labels[mask]
+    values = values[mask].reset_index(drop=True)
+    labels = labels[mask].reset_index(drop=True)
+
+    # Закон круговой диаграммы: оставляем максимум 6 наибольших элементов
+    if len(values) > 6:
+        top_idx = values.sort_values(ascending=False).index[:6]
+        values = values.loc[top_idx].reset_index(drop=True)
+        labels = labels.loc[top_idx].reset_index(drop=True)
 
     fig, ax = plt.subplots(figsize=(8, 8))
     _, _, autotexts = ax.pie(
         values, labels=labels, autopct="%1.1f%%",
-        colors=PALETTE[:len(values)], startangle=140,
+        colors=pal[:len(values)], startangle=140,
         pctdistance=0.82,
         wedgeprops=dict(edgecolor="white", linewidth=1.5),
     )
@@ -163,20 +191,22 @@ def _piechart(df, num_cols, txt_cols):
     return fig
 
 
-def _histogram(df, num_cols, txt_cols):
+def _histogram(df, num_cols, txt_cols, palette=None):
+    pal = palette or PALETTE
     fig, axes = plt.subplots(1, len(num_cols), figsize=(6 * len(num_cols), 5), squeeze=False)
     for i, col in enumerate(num_cols):
         vals = _to_num(df[col]).dropna()
         bins = min(30, max(5, len(vals) // 5))
         ax = axes[0][i]
-        ax.hist(vals, bins=bins, color=PALETTE[i % len(PALETTE)], edgecolor="white", alpha=0.85)
+        ax.hist(vals, bins=bins, color=pal[i % len(pal)], edgecolor="white", alpha=0.85)
         ax.set_xlabel(col)
         ax.set_ylabel("Frequency")
         ax.set_title(f"Histogram — {col}")
     return fig
 
 
-def _scatterplot(df, num_cols, txt_cols):
+def _scatterplot(df, num_cols, txt_cols, palette=None):
+    pal = palette or PALETTE
     x = _to_num(df[num_cols[0]])
     y = _to_num(df[num_cols[1]])
 
@@ -186,10 +216,10 @@ def _scatterplot(df, num_cols, txt_cols):
         for j, grp in enumerate(groups.unique()):
             mask = groups == grp
             ax.scatter(x[mask], y[mask], label=grp,
-                       color=PALETTE[j % len(PALETTE)], alpha=0.75, edgecolors="white", s=60)
+                       color=pal[j % len(pal)], alpha=0.75, edgecolors="white", s=60)
         ax.legend(title=txt_cols[0], fontsize=8)
     else:
-        ax.scatter(x, y, color=PALETTE[0], alpha=0.75, edgecolors="white", s=60)
+        ax.scatter(x, y, color=pal[0], alpha=0.75, edgecolors="white", s=60)
 
     ax.set_xlabel(num_cols[0])
     ax.set_ylabel(num_cols[1])
@@ -197,21 +227,22 @@ def _scatterplot(df, num_cols, txt_cols):
     return fig
 
 
-def _areachart(df, num_cols, txt_cols):
+def _areachart(df, num_cols, txt_cols, palette=None):
+    pal = palette or PALETTE
     x_vals = df[txt_cols[0]].astype(str) if txt_cols else df.index.astype(str)
     x_idx = np.arange(len(x_vals))
 
     fig, ax = plt.subplots(figsize=(10, 5))
     if len(num_cols) == 1:
         vals = _to_num(df[num_cols[0]]).fillna(0)
-        ax.fill_between(x_idx, vals, alpha=0.45, color=PALETTE[0])
-        ax.plot(x_idx, vals, color=PALETTE[0], linewidth=2, label=num_cols[0])
+        ax.fill_between(x_idx, vals, alpha=0.45, color=pal[0])
+        ax.plot(x_idx, vals, color=pal[0], linewidth=2, label=num_cols[0])
     else:
         baseline = np.zeros(len(x_idx))
         for i, col in enumerate(num_cols):
             vals = _to_num(df[col]).fillna(0).values
             ax.fill_between(x_idx, baseline, baseline + vals,
-                            alpha=0.6, color=PALETTE[i % len(PALETTE)], label=col)
+                            alpha=0.6, color=pal[i % len(pal)], label=col)
             baseline += vals
 
     ax.set_xticks(x_idx)
@@ -223,7 +254,8 @@ def _areachart(df, num_cols, txt_cols):
     return fig
 
 
-def _bubblechart(df, num_cols, txt_cols):
+def _bubblechart(df, num_cols, txt_cols, palette=None):
+    pal = palette or PALETTE
     x = _to_num(df[num_cols[0]])
     y = _to_num(df[num_cols[1]])
     sz_raw = _to_num(df[num_cols[2]]).fillna(0)
@@ -240,11 +272,11 @@ def _bubblechart(df, num_cols, txt_cols):
         for j, lbl in enumerate(labels.unique()):
             mask = labels == lbl
             ax.scatter(x[mask], y[mask], s=sizes[mask], label=lbl,
-                       color=PALETTE[j % len(PALETTE)], alpha=0.65,
+                       color=pal[j % len(pal)], alpha=0.65,
                        edgecolors="white", linewidths=0.8)
         ax.legend(title=txt_cols[0], fontsize=8)
     else:
-        ax.scatter(x, y, s=sizes, color=PALETTE[0], alpha=0.65,
+        ax.scatter(x, y, s=sizes, color=pal[0], alpha=0.65,
                    edgecolors="white", linewidths=0.8)
 
     ax.set_xlabel(num_cols[0])
@@ -302,12 +334,10 @@ def generate_chart(file_path: str, chart_config: dict, colors: list = None) -> s
     if not chart_config:
         raise ValueError("chart_config is empty")
 
-    if colors:
-        global PALETTE
-        PALETTE = colors + PALETTE[len(colors):]
+    palette = (colors + PALETTE[len(colors):]) if colors else PALETTE
 
     df = pd.read_excel(file_path)
-    df.columns = [str(c) for c in df.columns] 
+    df.columns = [str(c) for c in df.columns]
 
     raw_type  = chart_config.get("type", "")
     columns   = chart_config.get("columns_used") or []
@@ -336,14 +366,6 @@ def generate_chart(file_path: str, chart_config: dict, colors: list = None) -> s
         )
 
     _apply_style()
-    fig = _BUILDERS[chart_type](df_sub, num_cols, txt_cols)
-    result = _save(fig, OUTPUT_PATH)
-
-    if colors:
-        PALETTE = [
-            "#4C72B0", "#DD8452", "#55A868", "#C44E52",
-            "#8172B3", "#937860", "#DA8BC3", "#8C8C8C",
-            "#CCB974", "#64B5CD",
-        ]
-    return result
+    fig = _BUILDERS[chart_type](df_sub, num_cols, txt_cols, palette=palette)
+    return _save(fig, OUTPUT_PATH)
 

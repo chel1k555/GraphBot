@@ -615,8 +615,8 @@ body {
 
     /* Карточка-кнопка */
     .chart-option-btn {
-        width: 200px;
-        height: 240px;
+        width: 220px;
+        min-height: 260px;
 
         background: white;
         border-radius: 12px;
@@ -633,6 +633,7 @@ body {
 
         /* Убираем стандартный стиль кнопки */
         outline: none;
+        overflow: hidden;
     }
 
     /* Hover */
@@ -666,6 +667,23 @@ body {
         color: #777;
         text-align: center;
         line-height: 1.4;
+        width: 100%;
+        max-height: 120px;
+        overflow-y: auto;
+        word-break: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
+        padding: 0 4px;
+        box-sizing: border-box;
+    }
+
+    .chart-option-desc::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .chart-option-desc::-webkit-scrollbar-thumb {
+        background: #d1d5e0;
+        border-radius: 3px;
     }
 
 .chart-actions {
@@ -722,6 +740,18 @@ body {
     border-radius: 50%;
     animation: spin 1s linear infinite;
     margin: 0 auto 20px;
+}
+
+#loaderText {
+    transition: opacity 0.4s ease;
+    min-height: 28px;
+    margin: 0 0 8px;
+}
+
+.loader-sub {
+    color: #888;
+    font-size: 14px;
+    margin: 0;
 }
 
 @keyframes spin {
